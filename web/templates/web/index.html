@@ -1,0 +1,130 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.19.1/vis.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.19.1/vis.min.css"/>
+    <style type="text/css">
+          body {
+            padding: 0;
+            margin: 0;
+          }
+          #networktraffic {
+              width: 95vw;
+              height: 95vh;
+              display: block;
+              align-items: center;
+              text-align: center;
+          }
+          #settings {
+            background: black;
+            display: block;
+            text-emphasis-color: red;
+            align-items: center;
+            text-align: center;
+          }
+          #settings button {
+            background: red;
+            color: white;
+            font-size: 2em;
+            border: 2px solid grey;
+          }
+      </style>
+
+   </head>
+   <body>
+     <div id="settings">
+        <button href="#RESTART" id="play-physics">Play</button>|<button href="#STOP" id="pause-phiscs">Pause</button>
+     </div>
+     <div id="networktraffic"></div>
+
+
+
+
+      <script type="text/javascript">
+      var paused = false;
+        // create an array with nodes
+        var nodes = new vis.DataSet([]);
+
+        // create an array with edges
+        var edges = new vis.DataSet([]);
+
+        // create a network
+        var container = document.getElementById('networktraffic');
+
+        // provide the data in the vis format
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        var options = {
+          groups: {
+            2: {color:{background:'#ED146F'}, font: {color: '#EDE5E2'}, borderWidth:3, shape: 'circle'},
+            3: {color:{background:'#61D2D6'}, font: {color: '#EDE5E2'}, borderWidth:3, shape: 'circle'},
+            4: {color:{background:'#EDDE45'}, font: {color: '#000000'}, borderWidth:3, shape: 'circle'}
+          }
+        };
+
+        // initialize your network!
+        var network = new vis.Network(container, data, options);
+
+        // Let us open a web socket
+        var ws = new WebSocket("ws://localhost:13254/");
+
+        $( document ).ready(function(){
+          ws.onopen = function()
+          {
+             // Web Socket is connected, send data using send()
+             ws.send("listening");
+          };
+
+          ws.onmessage = function (evt)
+          {
+            //console.log("Not PASUED", !paused);
+            if (!paused) {
+               var received_msg = evt.data;
+               var json = JSON.stringify(eval("(" +received_msg+ ")"));
+               //console.log(json);
+               for (var ni in JSON.parse(json)['nodes']) {
+                node = JSON.parse(json)['nodes'][ni];
+                if (nodes.get(node['id']) == null) {
+
+                  nodes.add([node]);
+                } else {
+                  nodes.update(node);
+                }
+               }
+               edges.add(JSON.parse(json)['edges']);
+               }
+          };
+
+          ws.onclose = function()
+          {
+             // websocket is closed.
+             console.log("Connection terminated");
+          };
+
+          $("#pause-phiscs").on('click',function(){
+            paused = true;
+            network.stopSimulation();
+            network.physics.physicsEnabled  = false;
+           });
+
+          $("#play-physics").on('click',function(){
+            paused = false;
+            network.physics.physicsEnabled  = true;
+           });
+
+           function view_details(data){
+             for(ni in data['nodes']){
+               window.open('/ip/' + data['nodes'][ni]+'/', '_blank');
+             }
+             //console.log(data);
+           }
+
+          network.on('click', view_details);
+         });
+    </script>
+   </body>
+</html>
