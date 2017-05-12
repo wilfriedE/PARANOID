@@ -3,7 +3,7 @@ This is a project for my Free Culture Class. I just wanted to see what's going o
 This is a visualization of the incoming and outgoing traffic on my local machine. It's
 
 ### Keep in mind
-![Legend](Points on 'PARANOID'.jpg)
+![Legend](legend.jpg)
 
 
 Run the webserver separately from the collector.
